@@ -7,7 +7,7 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
 
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    const fetchServerFiles = async () => {
+    const fetchserverfiles = async () => {
         try {
             const response = await axios.get(`${apiUrl}/list_csv_files?directory=${currentDirectory}`);
             setServerFiles(response.data.files);
@@ -18,9 +18,9 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
 
     useEffect(() => {
         if (isOpen) {
-            fetchServerFiles();
+            fetchserverfiles();
         }
-    }, [isOpen, currentDirectory]);
+    }, [isOpen, currentDirectory, fetchserverfiles]);
 
     const handleDirectoryChange = (directory) => {
         setCurrentDirectory(directory);
@@ -36,7 +36,7 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             await axios.post('${apiUrl}/upload_csv', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            fetchServerFiles();
+            fetchserverfiles();
             alert('File uploaded successfully');
         } catch (error) {
             console.error('Upload error:', error);
