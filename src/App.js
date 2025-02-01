@@ -2,10 +2,10 @@ import React, {useState, useEffect, useCallback} from 'react';
 import axios from 'axios';
 import FileManagementModal from './file-management-modal';
 import PronunciationModal from './PronunciationModal';
-const _ = require('lodash');
+import _ from 'lodash';
 
 const App = () => {
-    const [cards, setCards] = useState([]); // Store all cards
+    const [cards, setCards] = useState([]);
     const [currentCardIndex, setCurrentCardIndex] = useState(0);
     const [answer, setAnswer] = useState('');
     const [feedback, setFeedback] = useState('');
@@ -18,14 +18,42 @@ const App = () => {
     const [pronunciationText, setPronunciationText] = useState('');
     const [isLargeImageModalOpen, setIsLargeImageModalOpen] = useState(false);
     const [largeImageUrl, setLargeImageUrl] = useState('');
-    const [currentFileName, setCurrentFileName] = useState('macleod-obs-taxa'); // Initial filename without extension
+    const [currentFileName, setCurrentFileName] = useState('macleod-obs-taxa');
 
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const currentCard = cards[currentCardIndex];
 
-     // Define loadcardsfromfile without useCallback
-    const loadcardsfromfile = async (filename, directory = 'mmaforays') => {
+    const resetState = useCallback(() => {
+        setFeedback('');
+        setAnswer('');
+        setAttempts(0);
+        setPronounceEnabled(false);
+        setHintsVisible(false);
+    }, []);
+
+    const shuffleCards = useCallback((array) => {
+        const newArray = [...array];
+        let currentIndex = newArray.length;
+        let temporaryValue, randomIndex;
+
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex -= 1;
+            temporaryValue = newArray[currentIndex];
+            newArray[currentIndex] = newArray[randomIndex];
+            newArray[randomIndex] = temporaryValue;
+        }
+
+        return newArray;
+    }, []);
+
+    const updateHints = useCallback((cardArray) => {
+        const uniqueNames = [...new Set(cardArray.map(card => card.scientific_name))];
+        setHints(uniqueNames.sort());
+    }, []);
+
+    const loadcardsfromfile = useCallback(async (filename, directory = 'mmaforays') => {
         try {
             const response = await axios.post(`${apiUrl}/load_cards`, {
                 filename,
@@ -37,37 +65,13 @@ const App = () => {
             setCurrentCardIndex(0);
             resetState();
             updateHints(shuffledCards);
-            // Set the current filename without the .csv extension
             setCurrentFileName(filename.replace('.csv', ''));
         } catch (error) {
             console.error('Error loading cards:', error);
         }
-    };
-
-     // Wrap loadcardsfromfile in useCallback
-    const loadcardsfromfile2 = useCallback(async (filename, directory = 'mmaforays') => {
-        try {
-            const response = await axios.post(`${apiUrl}/load_cards`, {
-                filename,
-                directory
-            });
-
-            const shuffledCards = shuffleCards([...response.data]);
-            setCards(shuffledCards);
-            setCurrentCardIndex(0);
-            resetState();
-            updateHints(shuffledCards);
-            // Set the current filename without the .csv extension
-            setCurrentFileName(filename.replace('.csv', ''));
-        } catch (error) {
-            console.error('Error loading cards:', error);
-        }
-        // eslint-disable-next-line no-use-before-define
-    }, [apiUrl, shuffleCards, resetState, updateHints]); // Add dependencies here
-
+    }, [apiUrl, shuffleCards, resetState, updateHints]);
 
     useEffect(() => {
-        // Initial load of default file if needed
         const loadDefaultFile = async () => {
             try {
                 await loadcardsfromfile('macleod-obs-taxa.csv', 'uploads');
@@ -77,40 +81,11 @@ const App = () => {
         };
 
         if (_.isEmpty(cards)) {
-            loadDefaultFile();
+            loadDefaultFile().then();
         }
     }, [cards, loadcardsfromfile]);
 
-    const shuffleCards = (array) => {
-        let currentIndex = array.length;
-        let temporaryValue, randomIndex;
-
-        while (currentIndex !== 0) {
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex -= 1;
-            temporaryValue = array[currentIndex];
-            array[currentIndex] = array[randomIndex];
-            array[randomIndex] = temporaryValue;
-        }
-
-        return array;
-    };
-
-
-    const updateHints = (cardArray) => {
-        const uniqueNames = [...new Set(cardArray.map(card => card.scientific_name))];
-        setHints(uniqueNames.sort());
-    };
-
-    const resetState = () => {
-        setFeedback('');
-        setAnswer('');
-        setAttempts(0);
-        setPronounceEnabled(false);
-        setHintsVisible(false);
-    };
-
-    const checkAnswer = () => {
+    const checkAnswer = useCallback(() => {
         if (!currentCard) return;
 
         const isCorrect = answer.toLowerCase() === currentCard.scientific_name.toLowerCase();
@@ -127,39 +102,34 @@ const App = () => {
                 setFeedback('Incorrect. Try again!');
             }
         }
-    };
+    }, [answer, attempts, currentCard]);
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = useCallback((e) => {
         if (e.key === 'Enter') {
             checkAnswer();
         }
-    };
+    }, [checkAnswer]);
 
-    function getArrayLength(array) {
-       return Object.keys(array).length;
-    }
-
-    const nextCard = () => {
-        let cardlength;
-        cardlength = getArrayLength(cards);
-        const nextIndex = (currentCardIndex + 1) % cardlength;
+    const nextCard = useCallback(() => {
+        const cardLength = cards.length;
+        const nextIndex = (currentCardIndex + 1) % cardLength;
         setCurrentCardIndex(nextIndex);
         resetState();
-    };
+    }, [cards.length, currentCardIndex, resetState]);
 
-    const restartDeck = () => {
+    const restartDeck = useCallback(() => {
         const shuffledCards = shuffleCards([...cards]);
         setCards(shuffledCards);
         setCurrentCardIndex(0);
         resetState();
-    };
+    }, [cards, shuffleCards, resetState]);
 
-    const handleFileSelect = async (filename, directory = 'mmaforays') => {
+    const handleFileSelect = useCallback(async (filename, directory = 'mmaforays') => {
         await loadcardsfromfile(filename, directory);
         setIsFileModalOpen(false);
-    };
+    }, [loadcardsfromfile]);
 
-    const openPronunciationModal = async () => {
+    const openPronunciationModal = useCallback(async () => {
         if (!currentCard) return;
 
         try {
@@ -171,56 +141,59 @@ const App = () => {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [apiUrl, currentCard]);
 
-    const openLargeImageModal = () => {
+    const openLargeImageModal = useCallback(() => {
         if (!currentCard) return;
         const largeUrl = currentCard.image_url.replace('medium', 'large');
         setLargeImageUrl(largeUrl);
         setIsLargeImageModalOpen(true);
-    };
+    }, [currentCard]);
 
-    const closeLargeImageModal = () => {
+    const closeLargeImageModal = useCallback(() => {
         setIsLargeImageModalOpen(false);
         setLargeImageUrl('');
-    };
+    }, []);
 
-    const toggleHints = () => {
-        setHintsVisible(!hintsVisible);
-    };
+    const toggleHints = useCallback(() => {
+        setHintsVisible(prev => !prev);
+    }, []);
 
-    const selectHint = (hint) => {
+    const selectHint = useCallback((hint) => {
         setAnswer(hint);
-    };
+    }, []);
 
     const LargeImageModal = () => {
         if (!isLargeImageModalOpen) return null;
 
         return (
-            <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 1000
-            }}>
-                <div style={{
-                    backgroundColor: 'white',
-                    padding: '20px',
-                    borderRadius: '10px',
-                    maxWidth: '90%',
-                    maxHeight: '90%',
-                    overflow: 'auto'
-                }}>
-                    {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
+            <div
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}
+            >
+                <div
+                    style={{
+                        backgroundColor: 'white',
+                        padding: '20px',
+                        borderRadius: '10px',
+                        maxWidth: '90%',
+                        maxHeight: '90%',
+                        overflow: 'auto'
+                    }}
+                >
                     <img
                         src={largeImageUrl}
-                        alt="Large species image"
+                        alt="Large species"
                         style={{
                             maxWidth: '100%',
                             maxHeight: '100%'
@@ -259,20 +232,20 @@ const App = () => {
                 alignItems: 'flex-end',
                 gap: '5px'
             }}>
-            <button
-                onClick={() => setIsFileModalOpen(true)}
-                style={{
-                     padding: '8px 16px',
+                <button
+                    onClick={() => setIsFileModalOpen(true)}
+                    style={{
+                        padding: '8px 16px',
                         borderRadius: '4px',
                         border: '1px solid #ccc',
                         backgroundColor: '#f8f8f8',
                         cursor: 'pointer'
-                }}
-            >
-                Manage Files
-            </button>
-{currentFileName}
-                </div>
+                    }}
+                >
+                    Manage Files
+                </button>
+                {currentFileName}
+            </div>
 
             <PronunciationModal
                 pronunciationModalOpen={pronunciationModalOpen}
