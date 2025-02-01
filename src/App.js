@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import axios from 'axios';
 import FileManagementModal from './file-management-modal';
 import PronunciationModal from './PronunciationModal';
@@ -24,6 +24,7 @@ const App = () => {
 
     const currentCard = cards[currentCardIndex];
 
+     // Define loadcardsfromfile without useCallback
     const loadcardsfromfile = async (filename, directory = 'mmaforays') => {
         try {
             const response = await axios.post(`${apiUrl}/load_cards`, {
@@ -42,6 +43,28 @@ const App = () => {
             console.error('Error loading cards:', error);
         }
     };
+
+     // Wrap loadcardsfromfile in useCallback
+    const loadcardsfromfile2 = useCallback(async (filename, directory = 'mmaforays') => {
+        try {
+            const response = await axios.post(`${apiUrl}/load_cards`, {
+                filename,
+                directory
+            });
+
+            const shuffledCards = shuffleCards([...response.data]);
+            setCards(shuffledCards);
+            setCurrentCardIndex(0);
+            resetState();
+            updateHints(shuffledCards);
+            // Set the current filename without the .csv extension
+            setCurrentFileName(filename.replace('.csv', ''));
+        } catch (error) {
+            console.error('Error loading cards:', error);
+        }
+        // eslint-disable-next-line no-use-before-define
+    }, [apiUrl, shuffleCards, resetState, updateHints]); // Add dependencies here
+
 
     useEffect(() => {
         // Initial load of default file if needed
@@ -194,6 +217,7 @@ const App = () => {
                     maxHeight: '90%',
                     overflow: 'auto'
                 }}>
+                    {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
                     <img
                         src={largeImageUrl}
                         alt="Large species image"
