@@ -112,8 +112,14 @@ const App = () => {
         }
     };
 
+    function getArrayLength(array) {
+       return Object.keys(array).length;
+    }
+
     const nextCard = () => {
-        const nextIndex = (currentCardIndex + 1) % (_.isEmpty(cards));
+        let cardlength;
+        cardlength = getArrayLength(cards);
+        const nextIndex = (currentCardIndex + 1) % cardlength;
         setCurrentCardIndex(nextIndex);
         resetState();
     };
