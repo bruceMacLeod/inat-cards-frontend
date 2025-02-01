@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import FileManagementModal from './file-management-modal';
 import PronunciationModal from './PronunciationModal';
+const _ = require('lodash');
 
 const App = () => {
     const [cards, setCards] = useState([]); // Store all cards
@@ -23,37 +24,7 @@ const App = () => {
 
     const currentCard = cards[currentCardIndex];
 
-    useEffect(() => {
-        // Initial load of default file if needed
-        const loadDefaultFile = async () => {
-            try {
-                await loadCardsFromFile('macleod-obs-taxa.csv', 'uploads');
-            } catch (error) {
-                console.error('Error loading default file:', error);
-            }
-        };
-
-        if (cards.length === 0) {
-            loadDefaultFile();
-        }
-    }, []);
-
-    const shuffleCards = (array) => {
-        let currentIndex = array.length;
-        let temporaryValue, randomIndex;
-
-        while (currentIndex !== 0) {
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex -= 1;
-            temporaryValue = array[currentIndex];
-            array[currentIndex] = array[randomIndex];
-            array[randomIndex] = temporaryValue;
-        }
-
-        return array;
-    };
-
-    const loadCardsFromFile = async (filename, directory = 'mmaforays') => {
+    const loadcardsfromfile = async (filename, directory = 'mmaforays') => {
         try {
             const response = await axios.post(`${apiUrl}/load_cards`, {
                 filename,
@@ -71,6 +42,37 @@ const App = () => {
             console.error('Error loading cards:', error);
         }
     };
+
+    useEffect(() => {
+        // Initial load of default file if needed
+        const loadDefaultFile = async () => {
+            try {
+                await loadcardsfromfile('macleod-obs-taxa.csv', 'uploads');
+            } catch (error) {
+                console.error('Error loading default file:', error);
+            }
+        };
+
+        if (_.isEmpty(cards)) {
+            loadDefaultFile();
+        }
+    }, [cards, loadcardsfromfile]);
+
+    const shuffleCards = (array) => {
+        let currentIndex = array.length;
+        let temporaryValue, randomIndex;
+
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex -= 1;
+            temporaryValue = array[currentIndex];
+            array[currentIndex] = array[randomIndex];
+            array[randomIndex] = temporaryValue;
+        }
+
+        return array;
+    };
+
 
     const updateHints = (cardArray) => {
         const uniqueNames = [...new Set(cardArray.map(card => card.scientific_name))];
@@ -111,7 +113,7 @@ const App = () => {
     };
 
     const nextCard = () => {
-        const nextIndex = (currentCardIndex + 1) % cards.length;
+        const nextIndex = (currentCardIndex + 1) % (_.isEmpty(cards));
         setCurrentCardIndex(nextIndex);
         resetState();
     };
@@ -124,7 +126,7 @@ const App = () => {
     };
 
     const handleFileSelect = async (filename, directory = 'mmaforays') => {
-        await loadCardsFromFile(filename, directory);
+        await loadcardsfromfile(filename, directory);
         setIsFileModalOpen(false);
     };
 
