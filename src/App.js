@@ -19,8 +19,8 @@ const App = () => {
     const [isLargeImageModalOpen, setIsLargeImageModalOpen] = useState(false);
     const [largeImageUrl, setLargeImageUrl] = useState('');
     const [currentFileName, setCurrentFileName] = useState('macleod-obs-taxa');
-
-    const apiUrl = process.env.REACT_APP_API_URL;
+    const apiUrl ="https://brave-desert-1dfb1e4762a74047842ea4c524424b7e.azurewebsites.net/"
+//    const apiUrl = process.env.REACT_APP_API_URL;
     console.log(`API URL: ${apiUrl}`);
 
     const currentCard = cards[currentCardIndex];
