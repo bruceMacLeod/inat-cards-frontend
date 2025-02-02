@@ -21,6 +21,7 @@ const App = () => {
     const [currentFileName, setCurrentFileName] = useState('macleod-obs-taxa');
 
     const apiUrl = process.env.REACT_APP_API_URL;
+    console.log(`API URL: ${apiUrl}`);
 
     const currentCard = cards[currentCardIndex];
 
