@@ -5,9 +5,8 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
     const [serverFiles, setServerFiles] = useState([]);
     const [currentDirectory, setCurrentDirectory] = useState('mmaforays');
 
-    const apiUrl ="https://blue-sand-816a95f6a5004dd183f0c42398918530.azurewebsites.net/"
-
- //   const apiUrl = process.env.REACT_APP_API_URL;
+//    const apiUrl ="https://blue-sand-816a95f6a5004dd183f0c42398918530.azurewebsites.net/"
+    const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchserverfiles = useCallback(async () => {
         try {
