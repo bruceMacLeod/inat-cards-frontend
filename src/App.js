@@ -87,8 +87,13 @@ const App = () => {
 
     const checkAnswer = useCallback((hint = null) => {
         if (!currentCard) return;
-        const userAnswer = hint !== null ? hint : answer;
-
+        // Ensure userAnswer is a string
+    const userAnswer = hint !== null ? String(hint) : String(answer);
+    if (!userAnswer) return;
+//    const userAnswer = hint !== null ? hint : answer;
+//        if (!userAnswer)
+//            return;
+        console.log(userAnswer)
         const isCorrect = userAnswer.toLowerCase() === currentCard.scientific_name.toLowerCase();
         const taxaUrl = currentCard.taxa_url; // Use the taxa_url from the currentCard object
         const hyperlinkedName = `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.scientific_name}</a>`;
