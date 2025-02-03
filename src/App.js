@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import FileManagementModal from './file-management-modal';
 import PronunciationModal from './PronunciationModal';
@@ -19,7 +19,6 @@ const App = () => {
     const [isLargeImageModalOpen, setIsLargeImageModalOpen] = useState(false);
     const [largeImageUrl, setLargeImageUrl] = useState('');
     const [currentFileName, setCurrentFileName] = useState('macleod-obs-taxa');
-//    const apiUrl ="https://blue-sand-816a95f6a5004dd183f0c42398918530.azurewebsites.net/"
     const apiUrl = process.env.REACT_APP_API_URL;
     console.log(`API URL: ${apiUrl}`);
 
@@ -86,18 +85,27 @@ const App = () => {
         }
     }, [cards, loadcardsfromfile]);
 
-    const checkAnswer = useCallback(() => {
+    const checkAnswer = useCallback((hint = null) => {
         if (!currentCard) return;
+        const userAnswer = hint !== null ? hint : answer;
 
-        const isCorrect = answer.toLowerCase() === currentCard.scientific_name.toLowerCase();
+        const isCorrect = userAnswer.toLowerCase() === currentCard.scientific_name.toLowerCase();
+        const taxaUrl = currentCard.taxa_url; // Use the taxa_url from the currentCard object
+        const hyperlinkedName = `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.scientific_name}</a>`;
+        const hyperlinkedCommonName = currentCard.common_name
+            ? `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.common_name}</a>`
+            : '';
+
+        console.log(isCorrect, currentCard, answer);
+
         if (isCorrect) {
-            setFeedback(`Correct! (${currentCard.common_name})`);
+            setFeedback(`Correct! ${hyperlinkedName} (${hyperlinkedCommonName})`);
             setPronounceEnabled(true);
         } else {
             const newAttempts = attempts + 1;
             setAttempts(newAttempts);
             if (newAttempts >= 3) {
-                setFeedback(`Incorrect. The correct name is: ${currentCard.scientific_name}`);
+                setFeedback(`Incorrect. The correct name is: ${hyperlinkedName} (${hyperlinkedCommonName})`);
                 setPronounceEnabled(true);
             } else {
                 setFeedback('Incorrect. Try again!');
@@ -162,7 +170,9 @@ const App = () => {
 
     const selectHint = useCallback((hint) => {
         setAnswer(hint);
-    }, []);
+        checkAnswer(hint);
+    }, [checkAnswer]);
+
 
     const LargeImageModal = () => {
         if (!isLargeImageModalOpen) return null;
@@ -282,7 +292,7 @@ const App = () => {
                         <input
                             type="text"
                             value={answer}
-                            onChange={(e) => setAnswer(e.target.value)}
+                            onChange={(e) => setAnswer(e.target.value)} // Corrected this line
                             onKeyDown={handleKeyDown}
                             placeholder="Enter scientific name"
                             style={{
@@ -314,9 +324,8 @@ const App = () => {
                                 color: feedback.includes('Incorrect') ? 'red' : 'green',
                                 marginBottom: '20px'
                             }}
-                        >
-                            {feedback}
-                        </div>
+                            dangerouslySetInnerHTML={{ __html: feedback }} // Render HTML for hyperlinks
+                        />
                     )}
 
                     {pronounceEnabled && (

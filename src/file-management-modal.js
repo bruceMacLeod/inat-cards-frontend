@@ -30,7 +30,8 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
     const handleFileUpload = useCallback(async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
+        console.log(e)
+        console.log(file)
         const formData = new FormData();
         formData.append('file', file);
         formData.append('directory', 'uploads');
