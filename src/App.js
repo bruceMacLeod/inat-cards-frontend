@@ -179,56 +179,76 @@ const App = () => {
     }, [checkAnswer]);
 
 
-    const LargeImageModal = () => {
-        if (!isLargeImageModalOpen) return null;
+const LargeImageModal = () => {
+    if (!isLargeImageModalOpen || !currentCard) return null;
 
-        return (
+    // Construct the attribution string
+    const attribution = `${currentCard.observer_name}, ${currentCard.observation_year}. iNaturalist observation: `;
+
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000
+            }}
+        >
             <div
                 style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1000
+                    backgroundColor: 'white',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    maxWidth: '90%',
+                    maxHeight: '90%',
+                    overflow: 'auto',
+                    textAlign: 'center'
                 }}
             >
-                <div
+                <img
+                    src={largeImageUrl}
+                    alt="Large species"
                     style={{
-                        backgroundColor: 'white',
-                        padding: '20px',
-                        borderRadius: '10px',
-                        maxWidth: '90%',
-                        maxHeight: '90%',
-                        overflow: 'auto'
+                        maxWidth: '100%',
+                        maxHeight: '80vh', // Limit image height to 80% of viewport height
+                        marginBottom: '10px'
+                    }}
+                />
+                <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+                    {attribution}
+                    <a
+                        href={currentCard.observation_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#007bff', textDecoration: 'none' }}
+                    >
+                        View on iNaturalist
+                    </a>
+                </div>
+                <button
+                    onClick={closeLargeImageModal}
+                    style={{
+                        marginTop: '10px',
+                        padding: '10px 20px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
                     }}
                 >
-                    <img
-                        src={largeImageUrl}
-                        alt="Large species"
-                        style={{
-                            maxWidth: '100%',
-                            maxHeight: '100%'
-                        }}
-                    />
-                    <button
-                        onClick={closeLargeImageModal}
-                        style={{
-                            marginTop: '10px',
-                            padding: '10px 20px'
-                        }}
-                    >
-                        Close
-                    </button>
-                </div>
+                    Close
+                </button>
             </div>
-        );
-    };
-
+        </div>
+    );
+};
     return (
         <div style={{
             padding: '20px',
