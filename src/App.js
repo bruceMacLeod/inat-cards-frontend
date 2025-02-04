@@ -37,7 +37,7 @@ const App = () => {
             }
         };
 
-//        wakeUpServer();
+        wakeUpServer();
     }, [apiUrl]);
 
     const resetState = useCallback(() => {
@@ -330,7 +330,7 @@ const LargeImageModal = () => {
 
                     <div onClick={openLargeImageModal} style={{ cursor: 'pointer' }}>
                         <img
-                            src={`${apiUrl}/get_image?url=${encodeURIComponent(currentCard.image_url)}`}
+                            src={currentCard.image_url}
                             alt={currentCard.scientific_name}
                             style={{
                                 maxWidth: '300px',
