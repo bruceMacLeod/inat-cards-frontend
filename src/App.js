@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import FileManagementModal from './file-management-modal';
 import PronunciationModal from './PronunciationModal';
-import _ from 'lodash';
+// import _ from 'lodash';
+
+import static_cards from './macleod-obs-taxa';
 
 const App = () => {
     const [cards, setCards] = useState([]);
@@ -23,6 +25,20 @@ const App = () => {
     console.log(`API URL: ${apiUrl}`);
 
     const currentCard = cards[currentCardIndex];
+
+ // Asynchronously wake up the Flask server
+    useEffect(() => {
+        const wakeUpServer = async () => {
+            try {
+                await axios.get(`${apiUrl}/wakeup`);
+                console.log('Server is awake!');
+            } catch (error) {
+                console.error('Error waking up server:', error);
+            }
+        };
+
+        wakeUpServer();
+    }, [apiUrl]);
 
     const resetState = useCallback(() => {
         setFeedback('');
@@ -71,19 +87,30 @@ const App = () => {
         }
     }, [apiUrl, shuffleCards, resetState, updateHints]);
 
+    // Load static data on initial render
     useEffect(() => {
-        const loadDefaultFile = async () => {
-            try {
-                await loadcardsfromfile('macleod-obs-taxa.csv', 'uploads');
-            } catch (error) {
-                console.error('Error loading default file:', error);
-            }
-        };
+        const shuffledCards = shuffleCards([...static_cards]);
+        setCards(shuffledCards);
+        updateHints(shuffledCards);
+        setCurrentFileName('macleod-obs-taxa');
+        setCurrentCardIndex(0);
+        resetState();
+    }, [resetState, shuffleCards, updateHints]);
 
-        if (_.isEmpty(cards)) {
-            loadDefaultFile().then();
-        }
-    }, [cards, loadcardsfromfile]);
+
+//    useEffect(() => {
+//        const loadDefaultFile = async () => {
+//            try {
+//                await loadcardsfromfile('macleod-obs-taxa.csv', 'uploads');
+//            } catch (error) {
+//                console.error('Error loading default file:', error);
+//            }
+//        };
+
+//        if (_.isEmpty(cards)) {
+//            loadDefaultFile().then();
+//        }
+//    }, [cards, loadcardsfromfile]);
 
     const checkAnswer = useCallback((hint = null) => {
         if (!currentCard) return;
