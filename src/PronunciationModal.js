@@ -1,5 +1,6 @@
-// PronunciationModal.js
-const PronunciationModal = ({ pronunciationModalOpen, pronunciationText, setPronunciationModalOpen }) => {
+import React from 'react';
+
+const PronunciationModal = ({ pronunciationModalOpen, pronunciationText, setPronunciationModalOpen, isServerWakingUp }) => {
     if (!pronunciationModalOpen) return null;
 
     return (
@@ -24,21 +25,31 @@ const PronunciationModal = ({ pronunciationModalOpen, pronunciationText, setPron
                 overflowY: 'auto'
             }}>
                 <h2>Pronunciation</h2>
-                <pre style={{
-                    whiteSpace: 'pre-wrap',
-                    wordWrap: 'break-word',
-                    fontFamily: 'monospace',
-                    backgroundColor: '#f4f4f4',
-                    padding: '10px',
-                    borderRadius: '5px'
-                }}>
-                    {pronunciationText}
-                </pre>
+                {isServerWakingUp ? (
+                    <p style={{ color: '#ff0000', textAlign: 'center' }}>
+                        Server is slowly waking up, should be ready in less than a minute.
+                    </p>
+                ) : (
+                    <pre style={{
+                        whiteSpace: 'pre-wrap',
+                        wordWrap: 'break-word',
+                        fontFamily: 'monospace',
+                        backgroundColor: '#f4f4f4',
+                        padding: '10px',
+                        borderRadius: '5px'
+                    }}>
+                        {pronunciationText}
+                    </pre>
+                )}
                 <button
                     onClick={() => setPronunciationModalOpen(false)}
                     style={{
                         marginTop: '10px',
-                        padding: '10px 20px'
+                        padding: '10px 20px',
+                        backgroundColor: '#f0f0f0',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
                     }}
                 >
                     Close

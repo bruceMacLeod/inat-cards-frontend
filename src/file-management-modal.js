@@ -1,20 +1,28 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
     const [serverFiles, setServerFiles] = useState([]);
     const [currentDirectory, setCurrentDirectory] = useState('mmaforays');
+    const [isServerWakingUp, setIsServerWakingUp] = useState(false); // New state for server wake-up status
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchserverfiles = useCallback(async () => {
         try {
+            // First, check if the server is awake
+            const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
+            if (wakeupResponse.status !== 200) {
+                setIsServerWakingUp(true); // Set wake-up state if the server is not ready
+                return;
+            }
+
+            // If the server is awake, fetch the files
             const response = await axios.get(`${apiUrl}/list_csv_files?directory=${currentDirectory}`);
             setServerFiles(response.data.files);
+            setIsServerWakingUp(false); // Reset wake-up state
         } catch (error) {
             console.error('Error fetching files:', error);
-            alert('Server is just waking up, should be ready in less than a minute');
+            setIsServerWakingUp(true); // Set wake-up state if there's an error
         }
     }, [apiUrl, currentDirectory]);
 
@@ -89,57 +97,67 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             >
                 <h2 id="file-management-title">File Management</h2>
 
-                <div>
-                    <input
-                        type="file"
-                        accept=".csv"
-                        onChange={handleFileUpload}
-                        aria-label="Upload CSV file"
-                        style={{ marginBottom: '10px' }}
-                    />
-                </div>
-                <div>
-                    <button
-                        onClick={() => handleDirectoryChange('mmaforays')}
-                        aria-label="Switch to MMAforays directory"
-                    >
-                        MMAforays
-                    </button>
-                    <button
-                        onClick={() => handleDirectoryChange('uploads')}
-                        aria-label="Switch to Uploads directory"
-                    >
-                        Uploads
-                    </button>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <ul style={{ flex: 1, listStyleType: 'none', padding: 0 }}>
-                        {serverFiles.map((file) => (
-                            <li
-                                key={file}
-                                style={{
-                                    marginBottom: '10px',
-                                    display: 'flex',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                <span style={{ marginRight: '20px' }}>{file}</span>
-                            </li>
-                        ))}
-                    </ul>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {serverFiles.map((file) => (
+                {/* Display wake-up message if the server is waking up */}
+                {isServerWakingUp ? (
+                    <p style={{ color: '#ff0000', textAlign: 'center' }}>
+                        Server is slowly waking up, should be ready in less than a minute.
+                    </p>
+                ) : (
+                    <>
+                        <div>
+                            <input
+                                type="file"
+                                accept=".csv"
+                                onChange={handleFileUpload}
+                                aria-label="Upload CSV file"
+                                style={{ marginBottom: '10px' }}
+                            />
+                        </div>
+                        <div>
                             <button
-                                key={`select-${file}`}
-                                onClick={() => handleFileSelect(file)}
-                                aria-label={`Select ${file}`}
-                                style={{ padding: '5px 10px', width: '100px' }}
+                                onClick={() => handleDirectoryChange('mmaforays')}
+                                aria-label="Switch to MMAforays directory"
                             >
-                                Select
+                                MMAforays
                             </button>
-                        ))}
-                    </div>
-                </div>
+                            <button
+                                onClick={() => handleDirectoryChange('uploads')}
+                                aria-label="Switch to Uploads directory"
+                            >
+                                Uploads
+                            </button>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <ul style={{ flex: 1, listStyleType: 'none', padding: 0 }}>
+                                {serverFiles.map((file) => (
+                                    <li
+                                        key={file}
+                                        style={{
+                                            marginBottom: '10px',
+                                            display: 'flex',
+                                            alignItems: 'center'
+                                        }}
+                                    >
+                                        <span style={{ marginRight: '20px' }}>{file}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {serverFiles.map((file) => (
+                                    <button
+                                        key={`select-${file}`}
+                                        onClick={() => handleFileSelect(file)}
+                                        aria-label={`Select ${file}`}
+                                        style={{ padding: '5px 10px', width: '100px' }}
+                                    >
+                                        Select
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
                     <button
                         onClick={onClose}

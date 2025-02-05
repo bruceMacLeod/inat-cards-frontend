@@ -2,9 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import FileManagementModal from './file-management-modal';
 import PronunciationModal from './PronunciationModal';
-// import _ from 'lodash';
-
-import static_cards from './macleod-obs-taxa';
+import static_cards from './data/uploads/macleod-obs-taxa';
 
 const App = () => {
     const [cards, setCards] = useState([]);
@@ -21,12 +19,11 @@ const App = () => {
     const [isLargeImageModalOpen, setIsLargeImageModalOpen] = useState(false);
     const [largeImageUrl, setLargeImageUrl] = useState('');
     const [currentFileName, setCurrentFileName] = useState('macleod-obs-taxa');
+    const [isServerWakingUp, setIsServerWakingUp] = useState(false);
     const apiUrl = process.env.REACT_APP_API_URL;
     console.log(`API URL: ${apiUrl}`);
 
-    const currentCard = cards[currentCardIndex];
-
- // Asynchronously wake up the Flask server
+    // Asynchronously wake up the Flask server
     useEffect(() => {
         const wakeUpServer = async () => {
             try {
@@ -97,38 +94,21 @@ const App = () => {
         resetState();
     }, [resetState, shuffleCards, updateHints]);
 
-
-//    useEffect(() => {
-//        const loadDefaultFile = async () => {
-//            try {
-//                await loadcardsfromfile('macleod-obs-taxa.csv', 'uploads');
-//            } catch (error) {
-//                console.error('Error loading default file:', error);
-//            }
-//        };
-
-//        if (_.isEmpty(cards)) {
-//            loadDefaultFile().then();
-//        }
-//    }, [cards, loadcardsfromfile]);
+    const currentCard = cards[currentCardIndex]; // Define currentCard here
 
     const checkAnswer = useCallback((hint = null) => {
-        if (!currentCard) return;
-        // Ensure userAnswer is a string
-    const userAnswer = hint !== null ? String(hint) : String(answer);
-    if (!userAnswer) return;
-//    const userAnswer = hint !== null ? hint : answer;
-//        if (!userAnswer)
-//            return;
-        console.log(userAnswer)
+        if (!currentCard) {
+            setFeedback('No card available.');
+            return;
+        }
+
+        const userAnswer = hint !== null ? String(hint) : String(answer);
         const isCorrect = userAnswer.toLowerCase() === currentCard.scientific_name.toLowerCase();
-        const taxaUrl = currentCard.taxa_url; // Use the taxa_url from the currentCard object
+        const taxaUrl = currentCard.taxa_url;
         const hyperlinkedName = `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.scientific_name}</a>`;
         const hyperlinkedCommonName = currentCard.common_name
             ? `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.common_name}</a>`
             : '';
-
-        console.log(isCorrect, currentCard, answer);
 
         if (isCorrect) {
             setFeedback(`Correct! ${hyperlinkedName} (${hyperlinkedCommonName})`);
@@ -152,13 +132,14 @@ const App = () => {
     }, [checkAnswer]);
 
     const nextCard = useCallback(() => {
-        const cardLength = cards.length;
-        const nextIndex = (currentCardIndex + 1) % cardLength;
+        if (cards.length === 0) return; // Prevent action if no cards are available
+        const nextIndex = (currentCardIndex + 1) % cards.length;
         setCurrentCardIndex(nextIndex);
         resetState();
     }, [cards.length, currentCardIndex, resetState]);
 
     const restartDeck = useCallback(() => {
+        if (cards.length === 0) return; // Prevent action if no cards are available
         const shuffledCards = shuffleCards([...cards]);
         setCards(shuffledCards);
         setCurrentCardIndex(0);
@@ -171,21 +152,39 @@ const App = () => {
     }, [loadcardsfromfile]);
 
     const openPronunciationModal = useCallback(async () => {
-        if (!currentCard) return;
+    if (!currentCard) {
+        alert('No card available.');
+        return;
+    }
 
-        try {
-            const response = await axios.post(`${apiUrl}/pronounce_name`, {
-                scientific_name: currentCard.scientific_name
-            });
-            setPronunciationText(response.data.pronunciation);
-            setPronunciationModalOpen(true);
-        } catch (err) {
-            console.error(err);
+    try {
+        // Check if the server is awake
+        const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
+        if (wakeupResponse.status !== 200) {
+            setIsServerWakingUp(true); // Set wake-up state if the server is not ready
+            setPronunciationModalOpen(true); // Open the modal to show the wake-up message
+            return;
         }
-    }, [apiUrl, currentCard]);
+
+        // If the server is awake, fetch the pronunciation
+        const response = await axios.post(`${apiUrl}/pronounce_name`, {
+            scientific_name: currentCard.scientific_name
+        });
+        setPronunciationText(response.data.pronunciation);
+        setIsServerWakingUp(false); // Reset wake-up state
+        setPronunciationModalOpen(true);
+    } catch (err) {
+        console.error(err);
+        setIsServerWakingUp(true); // Set wake-up state if there's an error
+        setPronunciationModalOpen(true); // Open the modal to show the wake-up message
+    }
+}, [apiUrl, currentCard]);
 
     const openLargeImageModal = useCallback(() => {
-        if (!currentCard) return;
+        if (!currentCard) {
+            alert('No card available.');
+            return;
+        }
         const largeUrl = currentCard.image_url.replace('medium', 'large');
         setLargeImageUrl(largeUrl);
         setIsLargeImageModalOpen(true);
@@ -205,77 +204,76 @@ const App = () => {
         checkAnswer(hint);
     }, [checkAnswer]);
 
+    const LargeImageModal = () => {
+        if (!isLargeImageModalOpen || !currentCard) return null;
 
-const LargeImageModal = () => {
-    if (!isLargeImageModalOpen || !currentCard) return null;
+        const attribution = `${currentCard.observer_name}, ${currentCard.observation_year}. iNaturalist observation: `;
 
-    // Construct the attribution string
-    const attribution = `${currentCard.observer_name}, ${currentCard.observation_year}. iNaturalist observation: `;
-
-    return (
-        <div
-            style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 1000
-            }}
-        >
+        return (
             <div
                 style={{
-                    backgroundColor: 'white',
-                    padding: '20px',
-                    borderRadius: '10px',
-                    maxWidth: '90%',
-                    maxHeight: '90%',
-                    overflow: 'auto',
-                    textAlign: 'center'
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
                 }}
             >
-                <img
-                    src={largeImageUrl}
-                    alt="Large species"
+                <div
                     style={{
-                        maxWidth: '100%',
-                        maxHeight: '80vh', // Limit image height to 80% of viewport height
-                        marginBottom: '10px'
-                    }}
-                />
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-                    {attribution}
-                    <a
-                        href={currentCard.observation_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#007bff', textDecoration: 'none' }}
-                    >
-                        View on iNaturalist
-                    </a>
-                </div>
-                <button
-                    onClick={closeLargeImageModal}
-                    style={{
-                        marginTop: '10px',
-                        padding: '10px 20px',
-                        backgroundColor: '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
+                        backgroundColor: 'white',
+                        padding: '20px',
+                        borderRadius: '10px',
+                        maxWidth: '90%',
+                        maxHeight: '90%',
+                        overflow: 'auto',
+                        textAlign: 'center'
                     }}
                 >
-                    Close
-                </button>
+                    <img
+                        src={largeImageUrl}
+                        alt="Large species"
+                        style={{
+                            maxWidth: '100%',
+                            maxHeight: '80vh',
+                            marginBottom: '10px'
+                        }}
+                    />
+                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+                        {attribution}
+                        <a
+                            href={currentCard.observation_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#007bff', textDecoration: 'none' }}
+                        >
+                            View on iNaturalist
+                        </a>
+                    </div>
+                    <button
+                        onClick={closeLargeImageModal}
+                        style={{
+                            marginTop: '10px',
+                            padding: '10px 20px',
+                            backgroundColor: '#007bff',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Close
+                    </button>
+                </div>
             </div>
-        </div>
-    );
-};
+        );
+    };
+
     return (
         <div style={{
             padding: '20px',
@@ -314,6 +312,7 @@ const LargeImageModal = () => {
                 pronunciationModalOpen={pronunciationModalOpen}
                 pronunciationText={pronunciationText}
                 setPronunciationModalOpen={setPronunciationModalOpen}
+                isServerWakingUp={isServerWakingUp}
             />
 
             <LargeImageModal />
@@ -324,7 +323,7 @@ const LargeImageModal = () => {
                 onFileSelect={handleFileSelect}
             />
 
-            {currentCard && (
+            {currentCard ? (
                 <div style={{ textAlign: 'center', width: '100%' }}>
                     <h1>Species Flashcard</h1>
 
@@ -344,7 +343,7 @@ const LargeImageModal = () => {
                         <input
                             type="text"
                             value={answer}
-                            onChange={(e) => setAnswer(e.target.value)} // Corrected this line
+                            onChange={(e) => setAnswer(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="Enter scientific name"
                             style={{
@@ -376,7 +375,7 @@ const LargeImageModal = () => {
                                 color: feedback.includes('Incorrect') ? 'red' : 'green',
                                 marginBottom: '20px'
                             }}
-                            dangerouslySetInnerHTML={{ __html: feedback }} // Render HTML for hyperlinks
+                            dangerouslySetInnerHTML={{ __html: feedback }}
                         />
                     )}
 
@@ -432,6 +431,8 @@ const LargeImageModal = () => {
                         </div>
                     )}
                 </div>
+            ) : (
+                <p>No cards available. Please load a file.</p>
             )}
         </div>
     );
