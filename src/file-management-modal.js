@@ -1,11 +1,11 @@
+
+
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
     const [serverFiles, setServerFiles] = useState([]);
     const [currentDirectory, setCurrentDirectory] = useState('mmaforays');
-
-//    const apiUrl ="https://blue-sand-816a95f6a5004dd183f0c42398918530.azurewebsites.net/"
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchserverfiles = useCallback(async () => {
@@ -14,6 +14,7 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             setServerFiles(response.data.files);
         } catch (error) {
             console.error('Error fetching files:', error);
+            alert('Server is just waking up, should be ready in less than a minute');
         }
     }, [apiUrl, currentDirectory]);
 
@@ -30,8 +31,7 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
     const handleFileUpload = useCallback(async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        console.log(e)
-        console.log(file)
+
         const formData = new FormData();
         formData.append('file', file);
         formData.append('directory', 'uploads');
