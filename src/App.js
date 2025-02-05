@@ -3,6 +3,7 @@ import axios from 'axios';
 import FileManagementModal from './file-management-modal';
 import PronunciationModal from './PronunciationModal';
 import static_cards from './data/uploads/macleod-obs-taxa';
+// import WakeupPoller from './WakeUpPoller';
 
 const App = () => {
     const [cards, setCards] = useState([]);
@@ -293,6 +294,7 @@ const App = () => {
                 alignItems: 'flex-end',
                 gap: '5px'
             }}>
+                {/*<WakeupPoller />  Add the WakeupPoller component here */}
                 <button
                     onClick={() => setIsFileModalOpen(true)}
                     style={{
