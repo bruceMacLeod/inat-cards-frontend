@@ -1,10 +1,9 @@
-// src/App.js
-import React, {useEffect, useCallback, useState} from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import axios from 'axios';
-import {useFlashcardDeck} from './hooks/useFlashcardDeck';
-import {useFlashcardGame} from './hooks/useFlashcardGame';
-import {useHints} from './hooks/useHints';
-import {FlashcardDisplay} from './components/FlashcardDisplay';
+import { useFlashcardDeck } from './hooks/useFlashcardDeck';
+import { useFlashcardGame } from './hooks/useFlashcardGame';
+import { useHints } from './hooks/useHints';
+import { FlashcardDisplay } from './components/FlashcardDisplay';
 import FileManagementModal from './components/FileManagementModal';
 import PronunciationModal from './components/PronunciationModal';
 import LargeImageModal from './components/LargeImageModal';
@@ -18,7 +17,7 @@ const App = () => {
     const [pronunciationText, setPronunciationText] = useState('');
     const [isServerWakingUp, setIsServerWakingUp] = useState(false);
 
-    console.log('API URL:', apiUrl);
+//    console.log('API URL:', apiUrl);
     const {
         currentCard,
         currentFileName,
@@ -46,17 +45,40 @@ const App = () => {
         toggleHints
     } = useHints();
 
-    useEffect(() => {
-        const wakeUpServer = async () => {
+    // Retry mechanism for waking up the server
+    const wakeUpServer = useCallback(async () => {
+        let retries = 5; // Number of retries
+        let delay = 3000; // Delay between retries in milliseconds
+
+        setIsServerWakingUp(true); // Show "Server is starting up" message
+
+        while (retries > 0) {
             try {
-                await axios.get(`${apiUrl}/wakeup`);
-                console.log('Server is awake!');
+                const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
+                if (wakeupResponse.status === 200) {
+                    console.log('Server is awake!');
+                    setIsServerWakingUp(false); // Hide "Server is starting up" message
+                    return;
+                }
             } catch (error) {
-                console.error('Error waking up server:', error);
+                console.log('Error waking up server:', error);
             }
-        };
-        wakeUpServer();
+
+            retries--;
+            if (retries > 0) {
+                console.log(`Retrying in ${delay / 1000} seconds...`);
+                await new Promise((resolve) => setTimeout(resolve, delay));
+            }
+        }
+
+        // If all retries fail, show an error message
+        console.error('Failed to wake up server after multiple retries.');
+        setIsServerWakingUp(false); // Optionally, you can keep this true to show an error message
     }, [apiUrl]);
+
+    useEffect(() => {
+        wakeUpServer();
+    }, [wakeUpServer]);
 
     useEffect(() => {
         const shuffledCards = shuffleCards([...static_cards]);
@@ -81,9 +103,10 @@ const App = () => {
         if (!currentCard) return;
 
         try {
-            const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
-            if (wakeupResponse.status !== 200) {
-                setIsServerWakingUp(true);
+//            const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
+//            if (wakeupResponse.status !== 200)
+            if (isServerWakingUp){
+//                setIsServerWakingUp(true);
                 setPronunciationModalOpen(true);
                 return;
             }
@@ -99,7 +122,7 @@ const App = () => {
             setIsServerWakingUp(true);
             setPronunciationModalOpen(true);
         }
-    }, [apiUrl, currentCard]);
+    }, [apiUrl, currentCard,isServerWakingUp]);
 
     const selectHint = useCallback((hint) => {
         setAnswer(hint);
@@ -123,11 +146,28 @@ const App = () => {
                 <button onClick={() => setIsFileModalOpen(true)}>
                     Manage Files
                 </button>
-                <div style={{marginTop: '10px'}}>
+                <div style={{ marginTop: '10px' }}>
                     <span>{currentFileName}</span>
                 </div>
             </div>
 
+            {/* Display "Server is starting up" message
+            {isServerWakingUp && (
+                <div style={{
+                    position: 'fixed',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    color: 'white',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    zIndex: 1000
+                }}>
+                    <p>Server is starting up, please wait...</p>
+                </div>
+            )}
+*/}
             <FileManagementModal
                 isOpen={isFileModalOpen}
                 onClose={() => setIsFileModalOpen(false)}
