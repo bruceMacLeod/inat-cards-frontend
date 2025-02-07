@@ -4,7 +4,8 @@ import axios from 'axios';
 const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
     const [serverFiles, setServerFiles] = useState([]);
     const [currentDirectory, setCurrentDirectory] = useState('mmaforays');
-    const [isServerWakingUp, setIsServerWakingUp] = useState(false); // New state for server wake-up status
+    const [isServerWakingUp, setIsServerWakingUp] = useState(false);
+    const [serverStartupMessage, setServerStartupMessage] = useState(''); // New state for server startup message
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchserverfiles = useCallback(async () => {
@@ -13,6 +14,7 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
             if (wakeupResponse.status !== 200) {
                 setIsServerWakingUp(true); // Set wake-up state if the server is not ready
+                setServerStartupMessage('Server is starting up, please wait...');
                 return;
             }
 
@@ -20,9 +22,17 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             const response = await axios.get(`${apiUrl}/list_csv_files?directory=${currentDirectory}`);
             setServerFiles(response.data.files);
             setIsServerWakingUp(false); // Reset wake-up state
+            setServerStartupMessage(''); // Clear the server startup message
         } catch (error) {
             console.error('Error fetching files:', error);
             setIsServerWakingUp(true); // Set wake-up state if there's an error
+
+            // Check if the error is a CORS or network error (server is starting up)
+            if (error.message.includes('CORS') || error.message.includes('Network Error')) {
+                setServerStartupMessage('Server is starting up, please wait...');
+            } else {
+                setServerStartupMessage('Unable to fetch files. Please try again.');
+            }
         }
     }, [apiUrl, currentDirectory]);
 
@@ -97,12 +107,14 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             >
                 <h2 id="file-management-title">File Management</h2>
 
-                {/* Display wake-up message if the server is waking up */}
-                {isServerWakingUp ? (
+                {/* Display server startup message if the server is waking up */}
+                {isServerWakingUp && (
                     <p style={{ color: '#ff0000', textAlign: 'center' }}>
-                        Server is slowly waking up, should be ready in less than a minute.
+                        {serverStartupMessage}
                     </p>
-                ) : (
+                )}
+
+                {!isServerWakingUp && (
                     <>
                         <div>
                             <input
