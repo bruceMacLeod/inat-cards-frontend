@@ -122,7 +122,7 @@ const App = () => {
             setIsServerWakingUp(true);
             setPronunciationModalOpen(true);
         }
-    }, [apiUrl, currentCard,isServerWakingUp]);
+    }, [apiUrl, currentCard]);
 
     const selectHint = useCallback((hint) => {
         setAnswer(hint);
