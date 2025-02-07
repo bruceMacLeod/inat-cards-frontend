@@ -10,7 +10,7 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
 
     const fetchserverfiles = useCallback(async () => {
         setIsServerWakingUp(true);
-        setServerStartupMessage('Checking server status...');
+        setServerStartupMessage('Server is slowly waking up, check back in a minute');
 
         try {
             // First try to wake up the server
