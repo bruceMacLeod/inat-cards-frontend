@@ -103,10 +103,10 @@ const App = () => {
         if (!currentCard) return;
 
         try {
-//            const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
-//            if (wakeupResponse.status !== 200)
-            if (isServerWakingUp){
-//                setIsServerWakingUp(true);
+            const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
+            if (wakeupResponse.status !== 200) {
+//            if (isServerWakingUp){
+                setIsServerWakingUp(true);
                 setPronunciationModalOpen(true);
                 return;
             }
