@@ -1,9 +1,9 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, {useEffect, useCallback, useState} from 'react';
 import axios from 'axios';
-import { useFlashcardDeck } from './hooks/useFlashcardDeck';
-import { useFlashcardGame } from './hooks/useFlashcardGame';
-import { useHints } from './hooks/useHints';
-import { FlashcardDisplay } from './components/FlashcardDisplay';
+import {useFlashcardDeck} from './hooks/useFlashcardDeck';
+import {useFlashcardGame} from './hooks/useFlashcardGame';
+import {useHints} from './hooks/useHints';
+import {FlashcardDisplay} from './components/FlashcardDisplay';
 import FileManagementModal from './components/FileManagementModal';
 import PronunciationModal from './components/PronunciationModal';
 import LargeImageModal from './components/LargeImageModal';
@@ -100,29 +100,40 @@ const App = () => {
     }, [loadCardsFromFile, updateHints, resetGameState]);
 
     const openPronunciationModal = useCallback(async () => {
-        if (!currentCard) return;
+    if (!currentCard) {
+        alert('No card available.');
+        return;
+    }
+
+    setIsServerWakingUp(true);
+    setPronunciationModalOpen(true);
+
+    try {
+        // First try to wake up the server
+        await axios.get(`${apiUrl}/wakeup`);
 
         try {
-            const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
-            if (wakeupResponse.status !== 200) {
-//            if (isServerWakingUp){
-                setIsServerWakingUp(true);
-                setPronunciationModalOpen(true);
-                return;
-            }
-
+            // If server is awake, try to get pronunciation
             const response = await axios.post(`${apiUrl}/pronounce_name`, {
                 scientific_name: currentCard.scientific_name
             });
+
             setPronunciationText(response.data.pronunciation);
             setIsServerWakingUp(false);
-            setPronunciationModalOpen(true);
-        } catch (err) {
-            console.error(err);
-            setIsServerWakingUp(true);
-            setPronunciationModalOpen(true);
+        } catch (pronunciationErr) {
+            // Check if it's a CORS error (indicates server is still starting)
+            if (pronunciationErr.message.includes('CORS') || pronunciationErr.message.includes('Network Error')) {
+                setPronunciationText('Server is slowly waking up. Please try again in a minute.');
+            } else {
+                setPronunciationText('Unable to fetch pronunciation. Please try again.');
+            }
         }
-    }, [apiUrl, currentCard]);
+    } catch (wakeupErr) {
+        // If wakeup endpoint fails, server is likely completely down
+        setPronunciationText('Server is currently offline. Please try again in a few minutes.');
+    }
+}, [apiUrl, currentCard]);
+
 
     const selectHint = useCallback((hint) => {
         setAnswer(hint);
@@ -146,7 +157,7 @@ const App = () => {
                 <button onClick={() => setIsFileModalOpen(true)}>
                     Manage Files
                 </button>
-                <div style={{ marginTop: '10px' }}>
+                <div style={{marginTop: '10px'}}>
                     <span>{currentFileName}</span>
                 </div>
             </div>
@@ -173,45 +184,45 @@ const App = () => {
                 onClose={() => setIsFileModalOpen(false)}
                 onFileSelect={handleFileSelect}
             />
-
-            <PronunciationModal
+           <PronunciationModal
                 pronunciationModalOpen={pronunciationModalOpen}
                 pronunciationText={pronunciationText}
                 setPronunciationModalOpen={setPronunciationModalOpen}
                 isServerWakingUp={isServerWakingUp}
             />
 
-            <LargeImageModal
-                isOpen={isLargeImageModalOpen}
-                onClose={() => setIsLargeImageModalOpen(false)}
-                currentCard={currentCard}
-            />
 
-            <FlashcardDisplay
-                currentCard={currentCard}
-                answer={answer}
-                setAnswer={setAnswer}
-                handleKeyDown={handleKeyDown}
-                checkAnswer={checkAnswer}
-                toggleHints={toggleHints}
-                hintsVisible={hintsVisible}
-                feedback={feedback}
-                pronounceEnabled={pronounceEnabled}
-                openPronunciationModal={openPronunciationModal}
-                nextCard={() => {
-                    nextCard();
-                    resetGameState();
-                    setHintsVisible(false);
-                }}
-                restartDeck={() => {
-                    restartDeck(); // Restart the deck
-                    resetGameState(); // Reset game state (including hints visibility)
-                    setHintsVisible(false);
-                }}
-                openLargeImageModal={() => setIsLargeImageModalOpen(true)}
-                hints={hints}
-                selectHint={selectHint}
-            />
+        <LargeImageModal
+            isOpen={isLargeImageModalOpen}
+            onClose={() => setIsLargeImageModalOpen(false)}
+            currentCard={currentCard}
+        />
+
+        <FlashcardDisplay
+            currentCard={currentCard}
+            answer={answer}
+            setAnswer={setAnswer}
+            handleKeyDown={handleKeyDown}
+            checkAnswer={checkAnswer}
+            toggleHints={toggleHints}
+            hintsVisible={hintsVisible}
+            feedback={feedback}
+            pronounceEnabled={pronounceEnabled}
+            openPronunciationModal={openPronunciationModal}
+            nextCard={() => {
+                nextCard();
+                resetGameState();
+                setHintsVisible(false);
+            }}
+            restartDeck={() => {
+                restartDeck(); // Restart the deck
+                resetGameState(); // Reset game state (including hints visibility)
+                setHintsVisible(false);
+            }}
+            openLargeImageModal={() => setIsLargeImageModalOpen(true)}
+            hints={hints}
+            selectHint={selectHint}
+        />
         </div>
     );
 };
