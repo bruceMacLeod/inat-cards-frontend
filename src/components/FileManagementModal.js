@@ -5,34 +5,36 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
     const [serverFiles, setServerFiles] = useState([]);
     const [currentDirectory, setCurrentDirectory] = useState('mmaforays');
     const [isServerWakingUp, setIsServerWakingUp] = useState(false);
-    const [serverStartupMessage, setServerStartupMessage] = useState(''); // New state for server startup message
+    const [serverStartupMessage, setServerStartupMessage] = useState('');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchserverfiles = useCallback(async () => {
+        setIsServerWakingUp(true);
+        setServerStartupMessage('Checking server status...');
+
         try {
-            // First, check if the server is awake
-            const wakeupResponse = await axios.get(`${apiUrl}/wakeup`);
-            if (wakeupResponse.status !== 200) {
-                setIsServerWakingUp(true); // Set wake-up state if the server is not ready
-                setServerStartupMessage('Server is starting up, please wait...');
-                return;
-            }
+            // First try to wake up the server
+            await axios.get(`${apiUrl}/wakeup`);
 
-            // If the server is awake, fetch the files
-            const response = await axios.get(`${apiUrl}/list_csv_files?directory=${currentDirectory}`);
-            setServerFiles(response.data.files);
-            setIsServerWakingUp(false); // Reset wake-up state
-            setServerStartupMessage(''); // Clear the server startup message
-        } catch (error) {
-            console.error('Error fetching files:', error);
-            setIsServerWakingUp(true); // Set wake-up state if there's an error
+            try {
+                // If server is awake, try to fetch files
+                const response = await axios.get(`${apiUrl}/list_csv_files?directory=${currentDirectory}`);
+                setServerFiles(response.data.files);
+                setIsServerWakingUp(false);
+                setServerStartupMessage('');
+            } catch (filesErr) {
+                console.error('Error fetching files:', filesErr);
 
-            // Check if the error is a CORS or network error (server is starting up)
-            if (error.message.includes('CORS') || error.message.includes('Network Error')) {
-                setServerStartupMessage('Server is starting up, please wait...');
-            } else {
-                setServerStartupMessage('Unable to fetch files. Please try again.');
+                // Check if it's a CORS error (indicates server is still starting)
+                if (filesErr.message.includes('CORS') || filesErr.message.includes('Network Error')) {
+                    setServerStartupMessage('Server is starting up. Please wait a moment and try again...');
+                } else {
+                    setServerStartupMessage('Unable to fetch files. Please try again.');
+                }
             }
+        } catch (wakeupErr) {
+            console.error('Server wake-up error:', wakeupErr);
+            setServerStartupMessage('Server is currently offline. Please try again in a few minutes.');
         }
     }, [apiUrl, currentDirectory]);
 
@@ -50,6 +52,9 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
         const file = e.target.files[0];
         if (!file) return;
 
+        setIsServerWakingUp(true);
+        setServerStartupMessage('Uploading file...');
+
         const formData = new FormData();
         formData.append('file', file);
         formData.append('directory', 'uploads');
@@ -62,7 +67,12 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             alert('File uploaded successfully');
         } catch (error) {
             console.error('Upload error:', error);
-            alert('File upload failed');
+            if (error.message.includes('CORS') || error.message.includes('Network Error')) {
+                setServerStartupMessage('Server is starting up. Please try again in a moment.');
+            } else {
+                alert('File upload failed');
+                setIsServerWakingUp(false);
+            }
         }
     }, [apiUrl, fetchserverfiles]);
 
@@ -72,6 +82,10 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             onClose();
         } catch (error) {
             console.error('File selection error:', error);
+            if (error.message.includes('CORS') || error.message.includes('Network Error')) {
+                setServerStartupMessage('Server is starting up. Please try again in a moment.');
+                setIsServerWakingUp(true);
+            }
         }
     }, [currentDirectory, onFileSelect, onClose]);
 
@@ -107,9 +121,16 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             >
                 <h2 id="file-management-title">File Management</h2>
 
-                {/* Display server startup message if the server is waking up */}
-                {isServerWakingUp && (
-                    <p style={{ color: '#ff0000', textAlign: 'center' }}>
+                {/* Always show the server message if it exists */}
+                {serverStartupMessage && (
+                    <p style={{
+                        color: '#ff0000',
+                        textAlign: 'center',
+                        padding: '10px',
+                        margin: '10px 0',
+                        backgroundColor: '#fff0f0',
+                        borderRadius: '5px'
+                    }}>
                         {serverStartupMessage}
                     </p>
                 )}
