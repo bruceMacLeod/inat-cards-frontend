@@ -4,8 +4,8 @@ const LargeImageModal = ({ isOpen, onClose, currentCard }) => {
     if (!isOpen || !currentCard || !currentCard.image_url) return null;
 
     // Create the full-size image URL by removing '_square' from the URL
-    const largeImageUrl = currentCard.image_url.replace('_square', '');
-
+//    const largeImageUrl = currentCard.image_url.replace('_square', '');
+    const largeImageUrl = currentCard.image_url.replace('medium', 'large');
     // Construct the attribution text
     const attribution = `${currentCard.observer_name}, ${currentCard.observation_year}. iNaturalist observation: `;
 
