@@ -6,7 +6,7 @@ import useFlashcardGame  from './useFlashcardGame';
 export const useFlashcardDeck = (apiUrl) => {
     const [cards, setCards] = useState([]);
     const [currentCardIndex, setCurrentCardIndex] = useState(0);
-    const [currentFileName, setCurrentFileName] = useState('macleod-obs-taxa');
+    const [currentFileName, setCurrentFileName] = useState('intro-obs-taxa');
     const {resetGameState} = useFlashcardGame();
 
     const shuffleCards = useCallback((array) => {
