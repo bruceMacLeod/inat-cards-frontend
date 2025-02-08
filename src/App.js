@@ -98,7 +98,7 @@ const App = () => {
         resetGameState();
         setHintsVisible(false); // Hide hints when a new file is selected
         setIsFileModalOpen(false);
-    }, [loadCardsFromFile, updateHints, resetGameState]);
+    }, [loadCardsFromFile, updateHints, resetGameState, setHintsVisible]);
 
     const openPronunciationModal = useCallback(async () => {
     if (!currentCard) {
