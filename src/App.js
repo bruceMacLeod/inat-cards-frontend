@@ -7,7 +7,7 @@ import {FlashcardDisplay} from './components/FlashcardDisplay';
 import FileManagementModal from './components/FileManagementModal';
 import PronunciationModal from './components/PronunciationModal';
 import LargeImageModal from './components/LargeImageModal';
-import static_cards from './data/uploads/macleod-obs-taxa';
+import static_cards from './data/uploads/intro-obs-taxa';
 
 const App = () => {
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -96,6 +96,7 @@ const App = () => {
         const newCards = await loadCardsFromFile(filename, directory);
         updateHints(newCards);
         resetGameState();
+        setHintsVisible(false); // Hide hints when a new file is selected
         setIsFileModalOpen(false);
     }, [loadCardsFromFile, updateHints, resetGameState]);
 
