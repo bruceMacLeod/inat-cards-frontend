@@ -3,9 +3,9 @@ import React from 'react';
 const LargeImageModal = ({ isOpen, onClose, currentCard }) => {
     if (!isOpen || !currentCard || !currentCard.image_url) return null;
 
-    // Create the full-size image URL by removing '_square' from the URL
-//    const largeImageUrl = currentCard.image_url.replace('_square', '');
+    // Create the full-size image URL by replacing 'medium.jpg' with 'large.jpg'
     const largeImageUrl = currentCard.image_url.replace('medium', 'large');
+
     // Construct the attribution text
     const attribution = `${currentCard.observer_name}, ${currentCard.observation_year}. iNaturalist observation: `;
 
@@ -17,7 +17,7 @@ const LargeImageModal = ({ isOpen, onClose, currentCard }) => {
                 left: 0,
                 width: '100%',
                 height: '100%',
-                backgroundColor: 'rgba(0,0,0,0.9)', // Even darker overlay for better contrast
+                backgroundColor: 'rgba(0,0,0,0.9)', // Dark overlay
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
@@ -54,7 +54,7 @@ const LargeImageModal = ({ isOpen, onClose, currentCard }) => {
                         alt="Large species"
                         style={{
                             maxWidth: '99%',
-                            maxHeight: 'calc(99vh - 80px)', // Increased size, minimal space for attribution
+                            maxHeight: 'calc(99vh - 100px)', // Adjusted to leave space for attribution
                             objectFit: 'contain',
                             borderRadius: '4px'
                         }}
@@ -64,16 +64,16 @@ const LargeImageModal = ({ isOpen, onClose, currentCard }) => {
                 {/* Attribution overlay at the bottom */}
                 <div style={{
                     position: 'absolute',
-                    bottom: '0',
-                    left: '0',
-                    right: '0',
-                    background: 'rgba(255, 255, 255, 0.9)',
+                    bottom: '10px', // Adjusted to ensure visibility
+                    left: '10px', // Adjusted to ensure visibility
+                    right: '10px', // Adjusted to ensure visibility
+                    background: 'rgba(255, 255, 255, 0.9)', // Semi-transparent white background
                     padding: '8px',
                     fontSize: '12px',
                     color: '#666',
                     textAlign: 'center',
-                    borderBottomLeftRadius: '8px',
-                    borderBottomRightRadius: '8px'
+                    borderRadius: '4px',
+                    zIndex: 1001 // Ensure attribution is above the image
                 }}>
                     {attribution}
                     <a
@@ -95,8 +95,8 @@ const LargeImageModal = ({ isOpen, onClose, currentCard }) => {
                     onClick={onClose}
                     style={{
                         position: 'absolute',
-                        top: '5px',
-                        right: '5px',
+                        top: '10px',
+                        right: '10px',
                         padding: '6px 12px',
                         backgroundColor: 'rgba(0, 123, 255, 0.8)',
                         color: 'white',
@@ -106,7 +106,7 @@ const LargeImageModal = ({ isOpen, onClose, currentCard }) => {
                         fontSize: '14px',
                         fontWeight: 'bold',
                         transition: 'all 0.2s',
-                        zIndex: 1001
+                        zIndex: 1002 // Ensure close button is above everything
                     }}
                     onMouseOver={(e) => {
                         e.target.style.backgroundColor = 'rgba(0, 86, 179, 0.9)';
