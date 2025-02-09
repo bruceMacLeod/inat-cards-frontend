@@ -17,6 +17,7 @@ export const useFlashcardGame = (currentCard) => {
         }
 
         const userAnswer = hint !== null ? String(hint) : String(answer);
+        console.log(userAnswer.toLowerCase(), currentCard.scientific_name.toLowerCase());
         const isCorrect = userAnswer.toLowerCase() === currentCard.scientific_name.toLowerCase();
         const taxaUrl = currentCard.taxa_url;
         const hyperlinkedName = `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.scientific_name}</a>`;
