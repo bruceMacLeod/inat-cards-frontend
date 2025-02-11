@@ -163,23 +163,7 @@ const App = () => {
                 </div>
             </div>
 
-            {/* Display "Server is starting up" message
-            {isServerWakingUp && (
-                <div style={{
-                    position: 'fixed',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    color: 'white',
-                    padding: '20px',
-                    borderRadius: '10px',
-                    zIndex: 1000
-                }}>
-                    <p>Server is starting up, please wait...</p>
-                </div>
-            )}
-*/}
+
             <FileManagementModal
                 isOpen={isFileModalOpen}
                 onClose={() => setIsFileModalOpen(false)}

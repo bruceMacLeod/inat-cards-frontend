@@ -9,16 +9,66 @@ export const useFlashcardGame = (currentCard) => {
     const [pronounceEnabled, setPronounceEnabled] = useState(false);
 //    const { toggleHints } = useHints(); // Call the hook and destructure
 
+    function isString(value) {
+      return typeof value === "string";
+    }
 
+    function formatScientificName(name) {
+    // Trim leading and trailing spaces
+        let trimmedName = name.trim().toLowerCase();
+
+    // Replace multiple spaces between words with a single space
+        trimmedName = trimmedName.replace(/\./g, '');
+        return trimmedName.replace(/\s+/g, ' ');
+
+
+    }
     const checkAnswer = useCallback((hint = null) => {
+    if (!currentCard) {
+        setFeedback('No card available.');
+        return;
+    }
+
+    console.log('isString(hint)', isString(hint));
+    const userAnswer = isString(hint) ? String(hint) : String(answer);
+    // Debugging: Log the userAnswer and hint
+    console.log('User Answer (raw):', userAnswer);
+    console.log('Hint:', hint);
+    console.log('answer', answer);
+
+    console.log(formatScientificName(userAnswer), formatScientificName(currentCard.scientific_name));
+    const isCorrect = formatScientificName(userAnswer) === formatScientificName(currentCard.scientific_name);
+    console.log(isCorrect);
+    const taxaUrl = currentCard.taxa_url;
+    const hyperlinkedName = `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.scientific_name}</a>`;
+    const hyperlinkedCommonName = currentCard.common_name
+        ? `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.common_name}</a>`
+        : '';
+
+    if (isCorrect) {
+        setFeedback(`Correct! ${hyperlinkedName} (${hyperlinkedCommonName})`);
+        setPronounceEnabled(true);
+    } else {
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        if (newAttempts >= 3) {
+            setFeedback(`Incorrect. The correct name is: ${hyperlinkedName} (${hyperlinkedCommonName})`);
+            setPronounceEnabled(true);
+        } else {
+            setFeedback('Incorrect. Try again!');
+        }
+    }
+}, [answer, attempts, currentCard]);
+
+    const checkAnswer2 = useCallback((hint = null) => {
         if (!currentCard) {
             setFeedback('No card available.');
             return;
         }
 
         const userAnswer = hint !== null ? String(hint) : String(answer);
-        console.log(userAnswer.toLowerCase(), currentCard.scientific_name.toLowerCase());
-        const isCorrect = userAnswer.trim().trimEnd().toLowerCase() === currentCard.scientific_name.trim().trimEnd().toLowerCase();
+        console.log(formatScientificName(userAnswer), formatScientificName(currentCard.scientific_name));
+        const isCorrect = formatScientificName(userAnswer) === formatScientificName(currentCard.scientific_name);
         const taxaUrl = currentCard.taxa_url;
         const hyperlinkedName = `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.scientific_name}</a>`;
         const hyperlinkedCommonName = currentCard.common_name
