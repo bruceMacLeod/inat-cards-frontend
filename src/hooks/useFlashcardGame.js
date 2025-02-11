@@ -60,35 +60,6 @@ export const useFlashcardGame = (currentCard) => {
     }
 }, [answer, attempts, currentCard]);
 
-    const checkAnswer2 = useCallback((hint = null) => {
-        if (!currentCard) {
-            setFeedback('No card available.');
-            return;
-        }
-
-        const userAnswer = hint !== null ? String(hint) : String(answer);
-        console.log(formatScientificName(userAnswer), formatScientificName(currentCard.scientific_name));
-        const isCorrect = formatScientificName(userAnswer) === formatScientificName(currentCard.scientific_name);
-        const taxaUrl = currentCard.taxa_url;
-        const hyperlinkedName = `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.scientific_name}</a>`;
-        const hyperlinkedCommonName = currentCard.common_name
-            ? `<a href="${taxaUrl}" target="_blank" rel="noopener noreferrer">${currentCard.common_name}</a>`
-            : '';
-
-        if (isCorrect) {
-            setFeedback(`Correct! ${hyperlinkedName} (${hyperlinkedCommonName})`);
-            setPronounceEnabled(true);
-        } else {
-            const newAttempts = attempts + 1;
-            setAttempts(newAttempts);
-            if (newAttempts >= 3) {
-                setFeedback(`Incorrect. The correct name is: ${hyperlinkedName} (${hyperlinkedCommonName})`);
-                setPronounceEnabled(true);
-            } else {
-                setFeedback('Incorrect. Try again!');
-            }
-        }
-    }, [answer, attempts, currentCard]);
 
     const resetGameState = useCallback(() => {
         setFeedback('');
