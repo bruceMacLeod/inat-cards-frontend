@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import axios from 'axios';
 
-const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
+const FileManagementModal = ({isOpen, onClose, onFileSelect, onDirectImport}) => {
     const [serverFiles, setServerFiles] = useState([]);
     const [currentDirectory, setCurrentDirectory] = useState('mmaforays');
     const [isServerWakingUp, setIsServerWakingUp] = useState(false);
     const [serverStartupMessage, setServerStartupMessage] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [selectedFileName, setSelectedFileName] = useState('');
+    const [uploadFileName, setUploadFileName] = useState('');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchserverfiles = useCallback(async () => {
@@ -13,19 +16,14 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
         setServerStartupMessage('Server is slowly waking up, check back in a minute');
 
         try {
-            // First try to wake up the server
             await axios.get(`${apiUrl}/wakeup`);
-
             try {
-                // If server is awake, try to fetch files
                 const response = await axios.get(`${apiUrl}/list_csv_files?directory=${currentDirectory}`);
                 setServerFiles(response.data.files);
                 setIsServerWakingUp(false);
                 setServerStartupMessage('');
             } catch (filesErr) {
                 console.error('Error fetching files:', filesErr);
-
-                // Check if it's a CORS error (indicates server is still starting)
                 if (filesErr.message.includes('CORS') || filesErr.message.includes('Network Error')) {
                     setServerStartupMessage('Server is starting up. Please wait a moment and try again...');
                 } else {
@@ -48,9 +46,43 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
         setCurrentDirectory(directory);
     }, []);
 
-    const handleFileUpload = useCallback(async (e) => {
+    const handleDirectImport = useCallback(async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        setSelectedFileName(file.name);
+
+        setIsProcessing(true);
+        setServerStartupMessage('Processing file...');
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await axios.post(`${apiUrl}/upload_csv_json`, formData, {
+                headers: {'Content-Type': 'multipart/form-data'}
+            });
+
+            if (response.data.records) {
+                onDirectImport(response.data.records, file.name);
+                onClose();
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            if (error.message.includes('CORS') || error.message.includes('Network Error')) {
+                setServerStartupMessage('Server is starting up. Please try again in a moment.');
+            } else {
+                alert('File import failed');
+            }
+        } finally {
+            setIsProcessing(false);
+            setServerStartupMessage('');
+        }
+    }, [apiUrl, onDirectImport, onClose]);
+
+   const handleFileUpload = useCallback(async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setUploadFileName(file.name);
 
         setIsServerWakingUp(true);
         setServerStartupMessage('Uploading file...');
@@ -61,7 +93,7 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
 
         try {
             await axios.post(`${apiUrl}/upload_csv`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: {'Content-Type': 'multipart/form-data'}
             });
             await fetchserverfiles();
             alert('File uploaded successfully');
@@ -88,6 +120,7 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             }
         }
     }, [currentDirectory, onFileSelect, onClose]);
+
 
     if (!isOpen) return null;
 
@@ -121,7 +154,6 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
             >
                 <h2 id="file-management-title">File Management</h2>
 
-                {/* Always show the server message if it exists */}
                 {serverStartupMessage && (
                     <p style={{
                         color: '#ff0000',
@@ -135,63 +167,139 @@ const FileManagementModal = ({ isOpen, onClose, onFileSelect }) => {
                     </p>
                 )}
 
-                {!isServerWakingUp && (
+                {!isServerWakingUp && !isProcessing && (
                     <>
-                        <div>
-                            <input
-                                type="file"
-                                accept=".csv"
-                                onChange={handleFileUpload}
-                                aria-label="Upload CSV file"
-                                style={{ marginBottom: '10px' }}
-                            />
-                        </div>
-                        <div>
-                            <button
-                                onClick={() => handleDirectoryChange('mmaforays')}
-                                aria-label="Switch to MMAforays directory"
-                            >
-                                MMAforays
-                            </button>
-                            <button
-                                onClick={() => handleDirectoryChange('uploads')}
-                                aria-label="Switch to Uploads directory"
-                            >
-                                Uploads
-                            </button>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <ul style={{ flex: 1, listStyleType: 'none', padding: 0 }}>
+                        <div style={{marginBottom: '20px'}}>
+                            <h3>Select File</h3>
+                            <div style={{marginBottom: '15px'}}>
+                                <button
+                                    onClick={() => handleDirectoryChange('mmaforays')}
+                                    aria-label="Switch to MMAforays directory"
+                                    style={{marginRight: '10px'}}
+                                >
+                                    MMAforays
+                                </button>
+                                <button
+                                    onClick={() => handleDirectoryChange('uploads')}
+                                    aria-label="Switch to Uploads directory"
+                                >
+                                    Uploads
+                                </button>
+                            </div>
+
+                            <div style={{
+                                border: '1px solid #eee',
+                                borderRadius: '5px',
+                                padding: '10px',
+                                maxHeight: '200px',
+                                overflowY: 'auto'
+                            }}>
                                 {serverFiles.map((file) => (
-                                    <li
+                                    <div
                                         key={file}
                                         style={{
-                                            marginBottom: '10px',
                                             display: 'flex',
-                                            alignItems: 'center'
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '5px 0',
+                                            borderBottom: '1px solid #eee'
                                         }}
                                     >
-                                        <span style={{ marginRight: '20px' }}>{file}</span>
-                                    </li>
+                                        <span style={{
+                                            flex: 1,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                            marginRight: '10px'
+                                        }}>
+                                            {file}
+                                        </span>
+                                        <button
+                                            onClick={() => handleFileSelect(file)}
+                                            aria-label={`Select ${file}`}
+                                            style={{
+                                                padding: '5px 10px',
+                                                width: '80px',
+                                                flexShrink: 0
+                                            }}
+                                        >
+                                            Select
+                                        </button>
+                                    </div>
                                 ))}
-                            </ul>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {serverFiles.map((file) => (
-                                    <button
-                                        key={`select-${file}`}
-                                        onClick={() => handleFileSelect(file)}
-                                        aria-label={`Select ${file}`}
-                                        style={{ padding: '5px 10px', width: '100px' }}
-                                    >
-                                        Select
-                                    </button>
-                                ))}
+                            </div>
+                        </div>
+
+                        <div style={{marginBottom: '20px'}}>
+                            <h3>Import iNaturalist CSV</h3>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px'
+                            }}>
+                                <label
+                                    style={{
+                                        padding: '8px 12px',
+                                        backgroundColor: '#f0f0f0',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Choose File
+                                    <input
+                                        type="file"
+                                        accept=".csv"
+                                        onChange={handleDirectImport}
+                                        style={{ display: 'none' }}
+                                        aria-label="Import iNaturalist CSV file"
+                                    />
+                                </label>
+                                {selectedFileName && (
+                                    <span style={{ marginLeft: '10px' }}>
+                                        {selectedFileName}
+                                    </span>
+                                )}
+                            </div>
+                            <p style={{fontSize: '0.9em', color: '#666', marginTop: '5px'}}>
+                                Import directly without saving to server
+                            </p>
+                        </div>
+
+                        <div style={{marginBottom: '20px'}}>
+                            <h3>Upload and Save CSV</h3>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px'
+                            }}>
+                                <label
+                                    style={{
+                                        padding: '8px 12px',
+                                        backgroundColor: '#f0f0f0',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Choose File
+                                    <input
+                                        type="file"
+                                        accept=".csv"
+                                        onChange={handleFileUpload}
+                                        style={{ display: 'none' }}
+                                        aria-label="Upload CSV file"
+                                    />
+                                </label>
+                                {uploadFileName && (
+                                    <span style={{ marginLeft: '10px' }}>
+                                        {uploadFileName}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+                <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '20px'}}>
                     <button
                         onClick={onClose}
                         aria-label="Close modal"

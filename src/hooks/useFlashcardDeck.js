@@ -23,6 +23,8 @@ export const useFlashcardDeck = (apiUrl) => {
 
     const loadCardsFromFile = useCallback(async (filename, directory = 'mmaforays') => {
         try {
+            if (!filename) return;
+
             const response = await axios.post(`${apiUrl}/load_cards`, {
                 filename,
                 directory

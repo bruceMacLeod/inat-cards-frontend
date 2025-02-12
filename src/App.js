@@ -16,6 +16,8 @@ const App = () => {
     const [pronunciationModalOpen, setPronunciationModalOpen] = useState(false);
     const [pronunciationText, setPronunciationText] = useState('');
     const [isServerWakingUp, setIsServerWakingUp] = useState(false);
+    const [importedFileName, setImportedFileName] = useState('');  // Add this state
+
 
 //    console.log('API URL:', apiUrl);
     const {
@@ -94,11 +96,26 @@ const App = () => {
 
     const handleFileSelect = useCallback(async (filename, directory) => {
         const newCards = await loadCardsFromFile(filename, directory);
+        setImportedFileName('');
         updateHints(newCards);
         resetGameState();
         setHintsVisible(false); // Hide hints when a new file is selected
         setIsFileModalOpen(false);
     }, [loadCardsFromFile, updateHints, resetGameState, setHintsVisible]);
+
+     const handleDirectImport = useCallback((records,filename) => {
+          // Remove .csv extension if present
+        const cleanFileName = filename.replace('.csv', '');
+        setImportedFileName(cleanFileName);
+        loadCardsFromFile('', ''); // This should clear currentFileName
+
+        const shuffledCards = shuffleCards([...records]);
+        setCards(shuffledCards);
+        updateHints(shuffledCards);
+        resetGameState();
+        setHintsVisible(false);
+        setIsFileModalOpen(false);
+    }, [shuffleCards, setCards, updateHints, resetGameState, setHintsVisible, loadCardsFromFile]);
 
     const openPronunciationModal = useCallback(async () => {
     if (!currentCard) {
@@ -159,7 +176,7 @@ const App = () => {
                     Manage Files
                 </button>
                 <div style={{marginTop: '10px'}}>
-                    <span>{currentFileName}</span>
+                    <span><span>{importedFileName || currentFileName}</span></span>
                 </div>
             </div>
 
@@ -168,6 +185,8 @@ const App = () => {
                 isOpen={isFileModalOpen}
                 onClose={() => setIsFileModalOpen(false)}
                 onFileSelect={handleFileSelect}
+                onDirectImport={handleDirectImport}
+
             />
            <PronunciationModal
                 pronunciationModalOpen={pronunciationModalOpen}
